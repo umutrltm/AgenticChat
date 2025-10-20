@@ -215,7 +215,7 @@ Session ID: ${sessionId || 'none'}`;
  * Send function results back to the LLM
  * @param {object} chat - Chat instance
  * @param {Array} functionResults - Results from function executions
- * @returns {Promise<string>} Final LLM response
+ * @returns {Promise<object>} LLM response with text and potential function calls
  */
 export async function sendFunctionResults(chat, functionResults) {
   const functionResponseParts = functionResults.map(result => ({
@@ -233,8 +233,16 @@ export async function sendFunctionResults(chat, functionResults) {
   const firstCandidate = candidates[0];
   const parts = firstCandidate?.content?.parts || [];
 
-  return parts
-    .filter(part => part.text)
-    .map(part => part.text)
-    .join('');
+  return {
+    text: parts
+      .filter(part => part.text)
+      .map(part => part.text)
+      .join(''),
+    functionCalls: parts
+      .filter(part => part.functionCall)
+      .map(part => ({
+        name: part.functionCall.name,
+        args: part.functionCall.args
+      }))
+  };
 }

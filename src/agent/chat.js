@@ -47,10 +47,19 @@ export async function processChat(message, sessionId = 'default') {
         result: r.response
       })));
 
-      // Send results back to LLM
-      finalResponse = await sendFunctionResults(llmResponse.chat, toolResults);
+      // Send results back to LLM and get response with potential new function calls
+      const llmFollowUp = await sendFunctionResults(llmResponse.chat, toolResults);
+      finalResponse = llmFollowUp.text;
 
-      break;
+      // Check if LLM returned new function calls to execute
+      if (llmFollowUp.functionCalls && llmFollowUp.functionCalls.length > 0) {
+        // Continue loop to execute new function calls
+        llmResponse.functionCalls = llmFollowUp.functionCalls;
+        console.log(`\n📋 LLM returned ${llmFollowUp.functionCalls.length} new function calls to execute`);
+      } else {
+        // No more function calls, exit loop
+        llmResponse.functionCalls = [];
+      }
     }
 
     console.log(`\nAgent: ${finalResponse}`);
